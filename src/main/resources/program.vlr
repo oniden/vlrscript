@@ -3,6 +3,9 @@ bib vlrext
 CLNT Dorine
 CLNT Ornella
 CLNT Eda
+CCLNT Cher << 1
+CCLNT Tono << 2
 BLR 5igi0 << 5 Dorine Ornella
 5igi0 >> Eda
+5igi0 >> Tono >> Cher
 Expose << 5igi0

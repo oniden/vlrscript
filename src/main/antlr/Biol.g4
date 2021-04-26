@@ -4,32 +4,34 @@ grammar Biol;
 
 vlrImport : Import MODIDENT ;
 
+funcCall : VFIDENT Assign (argList)? ;
+
 assignment : TYPE VFIDENT (Assign argList)? ;
 
 expression : VFIDENT # Vfident
-     | STRLIT # Strlit
-     | INTLIT # Intlit
-     | DECLIT # Declit
-     | '(' binOp ')' # Binop
-     | '(' funcCall ')' # Funccall
-     | '(' expression ')' # Expr
-     ;
+           | STRLIT # Strlit
+           | INTLIT # Intlit
+           | DECLIT # Declit
+           | Lpar funcCall Rpar # Funccall
+           | Lpar binOp Rpar # Binop
+           | Lpar expression Rpar # Expr
+           ;
 
 argList : (VFIDENT | expression)+ ;
 
-binOp : expression Oper expression # Leaf
-      | binOp Oper expression # Inner
-      | expression Oper binOp # Inner
+binOp : binOp Pow binOp
+      | binOp (Mul | Div) binOp
+      | binOp (Add | Sub) binOp
+      | binOp SQuote binOp
+      | expression
       ;
-
-funcCall : VFIDENT Assign (argList)? ;
 
 statement : expression
           | assignment
           | VFIDENT RevAssign VFIDENT
           ;
 
-root : (vlrImport | binOp | assignment | funcCall | statement | NL)* ;
+root : (vlrImport | binOp | assignment | funcCall | statement | NL)* EOF ;
 
 
 // lexer
@@ -38,16 +40,31 @@ root : (vlrImport | binOp | assignment | funcCall | statement | NL)* ;
 
 fragment LOWERCASE : [a-z] ;
 fragment UPPERCASE : [A-Z] ;
+fragment LETTER : UPPERCASE | LOWERCASE ;
 fragment DIGIT : [0-9] ;
-fragment IDENTBODY : (DIGIT | UPPERCASE | LOWERCASE | '_')* ;
+fragment ALPHANUM : LETTER | DIGIT ;
+fragment IDENTBODY : (ALPHANUM '_')* ;
 
 WS : (' ' | '\t') -> channel(HIDDEN) ;
 NL : ('\r'? '\n' | '\r')+ ;
 
 Assign : '<<' ;
 RevAssign : '>>' ;
+SQuote : '\'' ;
+Compare : '=' ;
 
 Import : 'bib' ;
+
+Add : '+' ;
+Sub : '-' ;
+Mul : '*' ;
+Div : '/' ;
+Pow : '^' ;
+Lpar : '(' ;
+Rpar : ')' ;
+
+Comment : '|' '.*' '(?<!\)|' ;
+
 
 /* built in
 'ENTY'
@@ -56,19 +73,11 @@ Import : 'bib' ;
 'CTRL'
 */
 TYPE : UPPERCASE+ ;
-
-INTLIT : ('-' | '+')? DIGIT+ ;
-// sign, integral, decimal (integral if no .)
-DECLIT : ('-' | '+')? (DIGIT* '.')? DIGIT+ ;
-
-Oper : '+'
-     | '-'
-     | '*'
-     | '/'
-     | '^'
-     ;
-
 // variable / function identifier
-VFIDENT : (DIGIT | UPPERCASE) IDENTBODY ;
+VFIDENT : (DIGIT | UPPERCASE) IDENTBODY? ;
 MODIDENT : (DIGIT | LOWERCASE) IDENTBODY ;
+
+INTLIT : ('-')? DIGIT+ ;
+// sign, integral, decimal (integral if no .)
+DECLIT : ('-')? (DIGIT* '.')? DIGIT+ ;
 STRLIT : '"' ( '\\' [btnfr"'\\] | ~[\r\n\\"] )* '"' ;
